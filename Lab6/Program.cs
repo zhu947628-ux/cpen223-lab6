@@ -1,6 +1,6 @@
 ﻿// Lab 6
-// Student name:
-// Student number:
+// Student name:Tingwei Zhu
+// Student number: 13860812
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +23,75 @@ Dictionary<string, Dictionary<string, double>> scaffold = new()
 //Compare finite distances using a small tolerance, and check unreachable
 //vertices with double.IsPositiveInfinity.
 //TODO
+Dictionary<string, double> distances =
+    GraphLibrary.ShortestDistancesFrom(scaffold, "A");
+
+double tolerance = 0.000001;
+
+if (distances.Count == 6 &&
+    Math.Abs(distances["A"] - 0.0) < tolerance &&
+    Math.Abs(distances["B"] - 2.0) < tolerance &&
+    Math.Abs(distances["C"] - 3.0) < tolerance &&
+    Math.Abs(distances["D"] - 4.5) < tolerance &&
+    Math.Abs(distances["E"] - 7.5) < tolerance &&
+    double.IsPositiveInfinity(distances["F"]))
+{
+    Console.WriteLine("Test 1 passed");
+}
+else
+{
+    Console.WriteLine("Test 1 failed");
+}
+
+Dictionary<string, double> isolated =
+    GraphLibrary.ShortestDistancesFrom(scaffold, "F");
+
+if (isolated.Count == 6 &&
+    Math.Abs(isolated["F"] - 0.0) < tolerance &&
+    double.IsPositiveInfinity(isolated["A"]) &&
+    double.IsPositiveInfinity(isolated["B"]) &&
+    double.IsPositiveInfinity(isolated["C"]) &&
+    double.IsPositiveInfinity(isolated["D"]) &&
+    double.IsPositiveInfinity(isolated["E"]))
+{
+    Console.WriteLine("Test 2 passed");
+}
+else
+{
+    Console.WriteLine("Test 2 failed");
+}
+
+Dictionary<string, Dictionary<string, double>> zeroCostGraph = new()
+{
+    ["A"] = new() { ["B"] = 0.0, ["C"] = 5.0 },
+    ["B"] = new() { ["A"] = 0.0, ["C"] = 2.0 },
+    ["C"] = new() { ["A"] = 5.0, ["B"] = 2.0 }
+};
+
+Dictionary<string, double> zeroDistances =
+    GraphLibrary.ShortestDistancesFrom(zeroCostGraph, "A");
+
+if (zeroDistances.Count == 3 &&
+    Math.Abs(zeroDistances["A"] - 0.0) < tolerance &&
+    Math.Abs(zeroDistances["B"] - 0.0) < tolerance &&
+    Math.Abs(zeroDistances["C"] - 2.0) < tolerance)
+{
+    Console.WriteLine("Test 3 passed");
+}
+else
+{
+    Console.WriteLine("Test 3 failed");
+}
+
+try
+{
+    GraphLibrary.ShortestDistancesFrom(scaffold, "Z");
+    Console.WriteLine("Test 4 failed");
+}
+catch (ArgumentException)
+{
+    Console.WriteLine("Test 4 passed");
+}
 //
 //
 //end Testing code
@@ -72,7 +141,54 @@ public static class GraphLibrary
         string source)
     {
         //TODO
-        throw new NotImplementedException();
+        if (!graph.ContainsKey(source))
+        {
+            throw new ArgumentException("Source vertex not found.");
+        }
+
+        Dictionary<string, double> distances = new();
+
+        foreach (string vertex in graph.Keys)
+        {
+            distances[vertex] = double.PositiveInfinity;
+        }
+
+        distances[source] = 0.0;
+
+// Process vertices in order of their shortest known distance
+        PriorityQueue<string, double> queue = new();
+        queue.Enqueue(source, 0.0);
+
+        HashSet<string> finalized = new();
+
+        while (queue.Count > 0)
+        {
+            string current = queue.Dequeue();
+
+            if (finalized.Contains(current))
+            {
+                continue;
+            }
+
+            finalized.Add(current);
+// Check whether going through the current vertex gives a shorter path
+            foreach (KeyValuePair<string, double> edge in graph[current])
+            {
+                string neighbor = edge.Key;
+                double edgeCost = edge.Value;
+
+                double candidateDist = distances[current] + edgeCost;
+
+// Update the distance and enqueue the improved path
+                if (candidateDist < distances[neighbor])
+                {
+                    distances[neighbor] = candidateDist;
+                    queue.Enqueue(neighbor, candidateDist);
+                }
+            }
+        }
+
+        return distances;
     }
 
 
